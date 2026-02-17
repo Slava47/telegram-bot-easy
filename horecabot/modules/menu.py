@@ -5,9 +5,10 @@
 Управление меню, категориями, позициями и заказами.
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
 
 
 @dataclass
@@ -99,6 +100,9 @@ class Order:
     comment: str = ""
     status: str = "new"  # new, confirmed, cooking, ready, delivered, cancelled
     created_at: datetime = field(default_factory=datetime.now)
+    updated_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    cancellation_reason: Optional[str] = None
     
     @property
     def subtotal(self) -> float:
@@ -119,6 +123,40 @@ class Order:
         """Удалить позицию из заказа"""
         if 0 <= item_index < len(self.items):
             self.items.pop(item_index)
+    
+    def can_be_cancelled(self) -> Tuple[bool, Optional[str]]:
+        """
+        Проверить, можно ли отменить заказ.
+        
+        Returns:
+            Кортеж (можно ли отменить, причина если нельзя)
+        """
+        if self.status == "cancelled":
+            return False, "Заказ уже отменен"
+        
+        if self.status in ["delivered", "completed"]:
+            return False, "Заказ уже завершен"
+        
+        if self.status == "ready":
+            return False, "Заказ уже готов и не может быть отменен"
+        
+        return True, None
+    
+    def cancel(self, reason: Optional[str] = None):
+        """
+        Отменить заказ.
+        
+        Args:
+            reason: Причина отмены
+        """
+        can_cancel, error = self.can_be_cancelled()
+        if not can_cancel:
+            raise ValueError(error)
+        
+        self.status = "cancelled"
+        self.cancelled_at = datetime.now()
+        self.updated_at = datetime.now()
+        self.cancellation_reason = reason
 
 
 class MenuModule:
@@ -142,10 +180,27 @@ class MenuModule:
         >>> menu.add_item(item)
     """
     
-    def __init__(self):
+    def __init__(self, enable_cache: bool = True):
+        """
+        Инициализация модуля меню.
+        
+        Args:
+            enable_cache: Включить кэширование
+        """
         self.categories: Dict[str, str] = {}  # id -> название
         self.items: Dict[str, MenuItem] = {}  # id -> MenuItem
         self.items_by_category: Dict[str, List[str]] = {}  # category -> [item_ids]
+        
+        # Кэширование
+        self.enable_cache = enable_cache
+        self._cache: Optional[Any] = None
+        
+        if enable_cache:
+            try:
+                from horecabot.core.cache import SmartMenuCache
+                self._cache = SmartMenuCache(ttl=300)
+            except ImportError:
+                self.enable_cache = False
     
     def add_category(self, category_id: str, name: str, emoji: str = "📋"):
         """
@@ -170,6 +225,11 @@ class MenuModule:
         if item.category not in self.items_by_category:
             self.items_by_category[item.category] = []
         self.items_by_category[item.category].append(item.id)
+        
+        # Инвалидировать кэш
+        if self.enable_cache and self._cache:
+            self._cache.invalidate_item(item.id)
+            self._cache.invalidate_category(item.category)
     
     def get_item(self, item_id: str) -> Optional[MenuItem]:
         """Получить позицию по ID"""
@@ -211,6 +271,45 @@ class MenuModule:
         """Установить доступность позиции"""
         if item_id in self.items:
             self.items[item_id].available = available
+            
+            # Инвалидировать кэш
+            if self.enable_cache and self._cache:
+                self._cache.invalidate_item(item_id)
+    
+    def get_cached_menu(self) -> Optional[List[MenuItem]]:
+        """
+        Получить кэшированное меню.
+        
+        Returns:
+            Список всех позиций из кэша или None
+        """
+        if not self.enable_cache or not self._cache:
+            return None
+        
+        return self._cache.cache.get("menu:full")
+    
+    def cache_full_menu(self):
+        """Кэшировать полное меню"""
+        if not self.enable_cache or not self._cache:
+            return
+        
+        all_items = list(self.items.values())
+        self._cache.cache.set("menu:full", all_items, ttl=600)  # 10 минут
+    
+    def get_category_cached(self, category_id: str) -> Optional[List[MenuItem]]:
+        """
+        Получить кэшированные позиции категории.
+        
+        Args:
+            category_id: ID категории
+        
+        Returns:
+            Список позиций из кэша или None
+        """
+        if not self.enable_cache or not self._cache:
+            return None
+        
+        return self._cache.cache.get(f"category:{category_id}")
 
 
 class OrderModule:
@@ -292,3 +391,74 @@ class OrderModule:
         """Обновить статус заказа"""
         if order_id in self.orders:
             self.orders[order_id].status = status
+            self.orders[order_id].updated_at = datetime.now()
+    
+    def cancel_order(
+        self,
+        order_id: str,
+        reason: Optional[str] = None
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Отменить заказ.
+        
+        Args:
+            order_id: ID заказа
+            reason: Причина отмены
+        
+        Returns:
+            Кортеж (успешность, сообщение об ошибке)
+        """
+        order = self.get_order(order_id)
+        
+        if order is None:
+            return False, "Заказ не найден"
+        
+        # Проверяем, можно ли отменить
+        can_cancel, error = order.can_be_cancelled()
+        if not can_cancel:
+            return False, error
+        
+        try:
+            order.cancel(reason=reason)
+            return True, None
+        except Exception as e:
+            return False, str(e)
+    
+    def get_user_active_orders(self, user_id: int) -> List[Order]:
+        """
+        Получить активные (не завершенные и не отмененные) заказы пользователя.
+        
+        Args:
+            user_id: ID пользователя
+        
+        Returns:
+            Список активных заказов
+        """
+        all_orders = self.get_user_orders(user_id)
+        return [
+            order for order in all_orders
+            if order.status not in ["delivered", "completed", "cancelled"]
+        ]
+    
+    def get_order_history(
+        self,
+        user_id: int,
+        limit: Optional[int] = None
+    ) -> List[Order]:
+        """
+        Получить историю заказов пользователя.
+        
+        Args:
+            user_id: ID пользователя
+            limit: Ограничение количества (последние N заказов)
+        
+        Returns:
+            Список заказов, отсортированный по дате (новые первые)
+        """
+        orders = self.get_user_orders(user_id)
+        orders.sort(key=lambda x: x.created_at, reverse=True)
+        
+        if limit:
+            return orders[:limit]
+        
+        return orders

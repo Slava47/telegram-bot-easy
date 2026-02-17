@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bot_name }} - Dashboard Кафе{% endblock %}
+
+{% block content %}
+<div class="stats">
+    <div class="stat-card">
+        <h3>Гостей сегодня</h3>
+        <div class="value">{{ stats.guests_today }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Заказов</h3>
+        <div class="value">{{ stats.orders_today }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Выручка</h3>
+        <div class="value">{{ stats.revenue_today }}₽</div>
+    </div>
+    <div class="stat-card">
+        <h3>Программа лояльности</h3>
+        <div class="value">{{ stats.loyalty_members }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>☕ Популярные напитки</h2>
+    {% if popular_drinks %}
+    <table>
+        <thead>
+            <tr>
+                <th>Напиток</th>
+                <th>Заказов</th>
+                <th>Выручка</th>
+                <th>Рейтинг</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for drink in popular_drinks %}
+            <tr>
+                <td><strong>{{ drink.name }}</strong></td>
+                <td>{{ drink.order_count }}</td>
+                <td>{{ drink.revenue }}₽</td>
+                <td>⭐ {{ drink.rating }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Статистика пока не собрана</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>🎁 Программа лояльности - Топ гостей</h2>
+    {% if top_loyalty_guests %}
+    <table>
+        <thead>
+            <tr>
+                <th>Гость</th>
+                <th>Штампов/Баллов</th>
+                <th>Заказов</th>
+                <th>Потрачено</th>
+                <th>Уровень</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for guest in top_loyalty_guests %}
+            <tr>
+                <td><strong>{{ guest.name }}</strong></td>
+                <td>
+                    {% if guest.stamps > 0 %}
+                    {{ guest.stamps }} ☕
+                    {% else %}
+                    {{ guest.loyalty_points }} pts
+                    {% endif %}
+                </td>
+                <td>{{ guest.total_orders }}</td>
+                <td>{{ guest.total_spent }}₽</td>
+                <td>
+                    {% if guest.loyalty_level == 'gold' %}
+                    <span class="badge badge-warning">🥇 Gold</span>
+                    {% elif guest.loyalty_level == 'silver' %}
+                    <span class="badge badge-info">🥈 Silver</span>
+                    {% else %}
+                    <span class="badge">🥉 Bronze</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Участников программы лояльности пока нет</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📦 Предзаказы</h2>
+    {% if preorders %}
+    <table>
+        <thead>
+            <tr>
+                <th>Время получения</th>
+                <th>Гость</th>
+                <th>Заказ</th>
+                <th>Сумма</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in preorders %}
+            <tr>
+                <td><strong>{{ order.pickup_time }}</strong></td>
+                <td>{{ order.user_name }}</td>
+                <td>{{ order.items_summary }}</td>
+                <td>{{ order.total }}₽</td>
+                <td>
+                    {% if order.status == 'ready' %}
+                    <span class="badge badge-success">Готов</span>
+                    {% elif order.status == 'preparing' %}
+                    <span class="badge badge-warning">Готовится</span>
+                    {% else %}
+                    <span class="badge badge-info">Принят</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Предзаказов нет</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

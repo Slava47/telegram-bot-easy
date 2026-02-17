@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bot_name }} - Dashboard Бара{% endblock %}
+
+{% block content %}
+<div class="stats">
+    <div class="stat-card">
+        <h3>Гостей сегодня</h3>
+        <div class="value">{{ stats.guests_today }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Заказов</h3>
+        <div class="value">{{ stats.orders_today }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Выручка</h3>
+        <div class="value">{{ stats.revenue_today }}₽</div>
+    </div>
+    <div class="stat-card">
+        <h3>VIP бронирования</h3>
+        <div class="value">{{ stats.vip_bookings }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>🍹 Топ коктейлей</h2>
+    {% if top_cocktails %}
+    <table>
+        <thead>
+            <tr>
+                <th>Коктейль</th>
+                <th>Заказов</th>
+                <th>Выручка</th>
+                <th>Рейтинг</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cocktail in top_cocktails %}
+            <tr>
+                <td><strong>{{ cocktail.name }}</strong></td>
+                <td>{{ cocktail.order_count }}</td>
+                <td>{{ cocktail.revenue }}₽</td>
+                <td>⭐ {{ cocktail.rating }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Статистика пока не собрана</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>🎭 Мероприятия</h2>
+    {% if events %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+        {% for event in events %}
+        <div style="padding: 20px; border-left: 4px solid #667eea; background: #f8f9fa; border-radius: 4px;">
+            <h3>{{ event.title }}</h3>
+            <p style="color: #666; margin: 10px 0;">📅 {{ event.date }} в {{ event.time }}</p>
+            <p>{{ event.description }}</p>
+            <p style="margin-top: 10px;">
+                <strong>Гостей в списке: {{ event.guest_count }}</strong>
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Предстоящих мероприятий нет</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>🔥 VIP-зоны</h2>
+    {% if vip_zones %}
+    <table>
+        <thead>
+            <tr>
+                <th>Время</th>
+                <th>Зона</th>
+                <th>Гость</th>
+                <th>Гостей</th>
+                <th>Депозит</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in vip_zones %}
+            <tr>
+                <td><strong>{{ booking.time_slot }}</strong></td>
+                <td>{{ booking.zone_name }}</td>
+                <td>{{ booking.user_name }}</td>
+                <td>{{ booking.guests_count }}</td>
+                <td>{{ booking.deposit_amount }}₽</td>
+                <td>
+                    {% if booking.status == 'confirmed' %}
+                    <span class="badge badge-success">Подтверждено</span>
+                    {% else %}
+                    <span class="badge badge-warning">Ожидает</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>VIP-зоны свободны</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>💨 Кальянное меню - Популярные вкусы</h2>
+    {% if hookah_stats %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        {% for flavor in hookah_stats %}
+        <div style="padding: 15px; background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%); border-radius: 8px; text-align: center;">
+            <h3>{{ flavor.name }}</h3>
+            <p style="font-size: 24px; font-weight: bold; color: #667eea; margin: 10px 0;">
+                {{ flavor.order_count }}
+            </p>
+            <p style="color: #666;">заказов</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Статистика по кальянам пока не собрана</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
