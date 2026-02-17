@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bot_name }} - Dashboard Ресторана{% endblock %}
+
+{% block content %}
+<div class="stats">
+    <div class="stat-card">
+        <h3>Всего гостей</h3>
+        <div class="value">{{ stats.total_guests }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Заказов сегодня</h3>
+        <div class="value">{{ stats.orders_today }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Выручка сегодня</h3>
+        <div class="value">{{ stats.revenue_today }}₽</div>
+    </div>
+    <div class="stat-card">
+        <h3>Средний чек</h3>
+        <div class="value">{{ stats.average_check }}₽</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>🍽 Популярные блюда</h2>
+    {% if popular_items %}
+    <table>
+        <thead>
+            <tr>
+                <th>Блюдо</th>
+                <th>Категория</th>
+                <th>Заказов</th>
+                <th>Выручка</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in popular_items %}
+            <tr>
+                <td><strong>{{ item.name }}</strong></td>
+                <td>{{ item.category }}</td>
+                <td>{{ item.order_count }}</td>
+                <td>{{ item.revenue }}₽</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Пока нет данных о заказах</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📦 Последние заказы</h2>
+    {% if recent_orders %}
+    <table>
+        <thead>
+            <tr>
+                <th>№ Заказа</th>
+                <th>Гость</th>
+                <th>Сумма</th>
+                <th>Тип</th>
+                <th>Статус</th>
+                <th>Время</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in recent_orders %}
+            <tr>
+                <td><strong>#{{ order.id[:8] }}</strong></td>
+                <td>{{ order.user_name }}</td>
+                <td>{{ order.total }}₽</td>
+                <td>
+                    {% if order.delivery_type == 'delivery' %}
+                    🚗 Доставка
+                    {% elif order.delivery_type == 'pickup' %}
+                    🏃 Самовывоз
+                    {% else %}
+                    🍽 В зале
+                    {% endif %}
+                </td>
+                <td>
+                    {% if order.status == 'new' %}
+                    <span class="badge badge-info">Новый</span>
+                    {% elif order.status == 'confirmed' %}
+                    <span class="badge badge-warning">Принят</span>
+                    {% elif order.status == 'ready' %}
+                    <span class="badge badge-success">Готов</span>
+                    {% elif order.status == 'cancelled' %}
+                    <span class="badge badge-danger">Отменен</span>
+                    {% endif %}
+                </td>
+                <td>{{ order.created_at }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Новых заказов пока нет</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📅 Бронирования на сегодня</h2>
+    {% if today_bookings %}
+    <table>
+        <thead>
+            <tr>
+                <th>Время</th>
+                <th>Имя</th>
+                <th>Телефон</th>
+                <th>Гостей</th>
+                <th>Столик</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in today_bookings %}
+            <tr>
+                <td><strong>{{ booking.time_slot }}</strong></td>
+                <td>{{ booking.user_name }}</td>
+                <td>{{ booking.user_phone }}</td>
+                <td>{{ booking.guests_count }}</td>
+                <td>{{ booking.resource_name }}</td>
+                <td>
+                    {% if booking.status == 'confirmed' %}
+                    <span class="badge badge-success">Подтверждено</span>
+                    {% else %}
+                    <span class="badge badge-warning">Ожидает</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Бронирований на сегодня нет</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

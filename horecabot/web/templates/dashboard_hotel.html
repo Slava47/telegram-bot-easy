@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bot_name }} - Dashboard Отеля{% endblock %}
+
+{% block content %}
+<div class="stats">
+    <div class="stat-card">
+        <h3>Всего гостей</h3>
+        <div class="value">{{ stats.total_guests }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Заездов сегодня</h3>
+        <div class="value">{{ stats.checkins_today }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Занятость</h3>
+        <div class="value">{{ stats.occupancy_rate }}%</div>
+    </div>
+    <div class="stat-card">
+        <h3>Выручка за месяц</h3>
+        <div class="value">{{ stats.monthly_revenue }}₽</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>🏨 Статус номеров</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        {% for room in rooms %}
+        <div style="padding: 15px; border: 2px solid {{ 'green' if room.available else 'red' }}; border-radius: 8px;">
+            <h3>{{ room.name }}</h3>
+            <p>Тип: {{ room.room_type }}</p>
+            <p>Вместимость: {{ room.capacity }} чел.</p>
+            <p>Цена: {{ room.price_per_night }}₽/ночь</p>
+            <p>
+                {% if room.available %}
+                <span class="badge badge-success">Свободен</span>
+                {% else %}
+                <span class="badge badge-danger">Занят</span>
+                {% endif %}
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <h2>📅 Предстоящие заезды</h2>
+    {% if upcoming_checkins %}
+    <table>
+        <thead>
+            <tr>
+                <th>Дата заезда</th>
+                <th>Гость</th>
+                <th>Номер</th>
+                <th>Ночей</th>
+                <th>Гостей</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in upcoming_checkins %}
+            <tr>
+                <td><strong>{{ booking.check_in }}</strong></td>
+                <td>{{ booking.user_name }}</td>
+                <td>{{ booking.resource_name }}</td>
+                <td>{{ booking.nights }}</td>
+                <td>{{ booking.guests_count }}</td>
+                <td>
+                    {% if booking.status == 'confirmed' %}
+                    <span class="badge badge-success">Подтверждено</span>
+                    {% else %}
+                    <span class="badge badge-warning">Ожидает</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Предстоящих заездов нет</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>🛎 Запросы консьержа</h2>
+    {% if concierge_requests %}
+    <table>
+        <thead>
+            <tr>
+                <th>Время</th>
+                <th>Гость</th>
+                <th>Номер</th>
+                <th>Запрос</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for request in concierge_requests %}
+            <tr>
+                <td>{{ request.created_at }}</td>
+                <td>{{ request.user_name }}</td>
+                <td>{{ request.room }}</td>
+                <td>{{ request.description }}</td>
+                <td>
+                    {% if request.status == 'completed' %}
+                    <span class="badge badge-success">Выполнен</span>
+                    {% elif request.status == 'in_progress' %}
+                    <span class="badge badge-warning">В работе</span>
+                    {% else %}
+                    <span class="badge badge-info">Новый</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Новых запросов нет</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

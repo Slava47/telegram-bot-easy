@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bot_name }} - Dashboard Фастфуда{% endblock %}
+
+{% block content %}
+<div class="stats">
+    <div class="stat-card">
+        <h3>Заказов сегодня</h3>
+        <div class="value">{{ stats.orders_today }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Среднее время</h3>
+        <div class="value">{{ stats.avg_prep_time }} мин</div>
+    </div>
+    <div class="stat-card">
+        <h3>Выручка</h3>
+        <div class="value">{{ stats.revenue_today }}₽</div>
+    </div>
+    <div class="stat-card">
+        <h3>Активных заказов</h3>
+        <div class="value">{{ stats.active_orders }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>🍔 Топ блюд</h2>
+    {% if top_items %}
+    <table>
+        <thead>
+            <tr>
+                <th>Блюдо</th>
+                <th>Категория</th>
+                <th>Заказов</th>
+                <th>Выручка</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in top_items %}
+            <tr>
+                <td><strong>{{ item.name }}</strong></td>
+                <td>{{ item.category }}</td>
+                <td>{{ item.order_count }}</td>
+                <td>{{ item.revenue }}₽</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Статистика пока не собрана</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>🎁 Популярные комбо</h2>
+    {% if combo_deals %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+        {% for combo in combo_deals %}
+        <div style="padding: 20px; border: 2px solid #667eea; border-radius: 8px;">
+            <h3>{{ combo.name }}</h3>
+            <p style="color: #666; margin: 10px 0;">{{ combo.description }}</p>
+            <p><strong>{{ combo.price }}₽</strong></p>
+            <p style="color: #667eea; margin-top: 10px;">
+                📦 Заказано: {{ combo.order_count }} раз
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Комбо-предложений пока нет</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📦 Активные заказы</h2>
+    {% if active_orders %}
+    <table>
+        <thead>
+            <tr>
+                <th>№ Заказа</th>
+                <th>Время</th>
+                <th>Тип</th>
+                <th>Позиций</th>
+                <th>Сумма</th>
+                <th>Статус</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in active_orders %}
+            <tr>
+                <td><strong>#{{ order.id[:8] }}</strong></td>
+                <td>{{ order.created_at }}</td>
+                <td>
+                    {% if order.delivery_type == 'delivery' %}
+                    🚗 Доставка
+                    {% elif order.delivery_type == 'pickup' %}
+                    🏃 Самовывоз
+                    {% elif order.delivery_type == 'drive_through' %}
+                    🚘 Drive-Through
+                    {% else %}
+                    🍽 В зале
+                    {% endif %}
+                </td>
+                <td>{{ order.items_count }}</td>
+                <td>{{ order.total }}₽</td>
+                <td>
+                    {% if order.status == 'new' %}
+                    <span class="badge badge-info">Новый</span>
+                    {% elif order.status == 'preparing' %}
+                    <span class="badge badge-warning">Готовится</span>
+                    {% elif order.status == 'ready' %}
+                    <span class="badge badge-success">Готов</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn" style="padding: 5px 10px; font-size: 12px;">
+                        Обновить статус
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <p>Активных заказов нет</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>🎟 Активные купоны</h2>
+    {% if active_coupons %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+        {% for coupon in active_coupons %}
+        <div style="padding: 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border-radius: 8px;">
+            <h3>{{ coupon.code }}</h3>
+            <p style="margin: 10px 0;">{{ coupon.description }}</p>
+            <p style="font-size: 24px; font-weight: bold;">
+                -{{ coupon.discount }}%
+            </p>
+            <p style="font-size: 12px; opacity: 0.9;">
+                Использован: {{ coupon.used_count }} раз
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Активных купонов нет</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
