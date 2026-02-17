@@ -9,6 +9,7 @@ from horecabot.core.validation import (
 from horecabot.core.telegram_api import TelegramAPIWrapper, TelegramError, TelegramTimeoutError
 from horecabot.core.i18n import I18n, Language, translate, get_i18n
 from horecabot.core.cache import MenuCache, SmartMenuCache
+from horecabot.core.callbacks import CallbackRouter, CallbackBuilder, CallbackData
 
 __all__ = [
     "HorecaBot",
@@ -33,4 +34,7 @@ __all__ = [
     "get_i18n",
     "MenuCache",
     "SmartMenuCache",
+    "CallbackRouter",
+    "CallbackBuilder",
+    "CallbackData",
 ]
